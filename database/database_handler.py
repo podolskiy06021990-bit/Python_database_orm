@@ -274,32 +274,54 @@ class PostgreSQLHandler:
             return {}
 
 
+def _ensure_tables():
+    """
+    Создаёт таблицы по текущим моделям, если их ещё нет.
+    Порядок: Customer, Product, Order, OrderItem (из-за внешних ключей).
+    Не зависит от файлов миграций.
+    """
+    from django.db import connection
+
+    models_to_create = [Customer, Product, Order, OrderItem]
+
+    with connection.cursor() as cursor:
+        existing_tables = set(connection.introspection.table_names(cursor))
+
+    with connection.schema_editor() as schema_editor:
+        for model in models_to_create:
+            table = model._meta.db_table
+            if table in existing_tables:
+                continue
+            schema_editor.create_model(model)
+            existing_tables.add(table)
+            print(f"  Создана таблица: {table}")
+
+
 def setup_database():
-    """Настройка базы данных (создание таблиц)"""
+    """Настройка базы данных (создание таблиц). Всегда создаёт недостающие таблицы."""
     if not DJANGO_SETUP:
         print("❌ Django не настроен")
         return False
 
+    print("🔄 Инициализация таблиц в базе данных...")
+
+    # Пробуем миграции (могут не создать таблицы, если миграций нет или не применяются)
     try:
         from django.core.management import call_command
+        call_command('makemigrations', 'database', verbosity=0)
+        call_command('migrate', verbosity=0)
+    except Exception:
+        pass
 
-        print("🔄 Инициализация таблиц в базе данных...")
-
-        try:
-            call_command('makemigrations', 'database', verbosity=1)
-        except Exception as e:
-            print(f"⚠️  Предупреждение при создании миграций: {e}")
-
-        try:
-            call_command('migrate', verbosity=1)
-            print("✅ Таблицы в базе данных созданы/обновлены")
-            return True
-        except Exception as e:
-            print(f"❌ Ошибка при применении миграций: {e}")
-            return False
-
+    # Всегда проверяем и создаём недостающие таблицы по моделям
+    try:
+        _ensure_tables()
+        print("✅ Таблицы в базе данных созданы/обновлены")
+        return True
     except Exception as e:
-        print(f"❌ Неожиданная ошибка настройки базы данных: {e}")
+        print(f"❌ Ошибка при создании таблиц: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
