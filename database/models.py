@@ -1,5 +1,7 @@
 """
-Модели базы данных с использованием Django ORM для PostgreSQL
+Модели базы данных с использованием Django ORM для PostgreSQL.
+
+Описывает сущности: клиенты, товары, заказы и позиции в заказе.
 """
 from django.db import models
 from django.utils import timezone
@@ -7,12 +9,19 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Customer(models.Model):
-    """Модель клиента"""
+    """
+    Модель клиента.
+
+    Хранит персональные данные и контакты покупателя.
+    Связана с заказами через Order (один клиент — много заказов).
+    """
+    # Персональные данные
     first_name = models.CharField(max_length=100, verbose_name="Имя")
     last_name = models.CharField(max_length=100, verbose_name="Фамилия")
     email = models.EmailField(unique=True, verbose_name="Электронная почта")
     phone = models.CharField(max_length=20, verbose_name="Телефон", blank=True)
     address = models.TextField(verbose_name="Адрес", blank=True)
+    # Служебные поля (заполняются автоматически)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
@@ -20,6 +29,7 @@ class Customer(models.Model):
         db_table = 'customers'
         verbose_name = 'Клиент'
         verbose_name_plural = 'Клиенты'
+        # Индексы для быстрого поиска по email и ФИО
         indexes = [
             models.Index(fields=['email']),
             models.Index(fields=['last_name', 'first_name']),
@@ -30,7 +40,13 @@ class Customer(models.Model):
 
 
 class Product(models.Model):
-    """Модель товара"""
+    """
+    Модель товара (номенклатура).
+
+    Описывает товар: название, категория, цена, остаток на складе.
+    Артикул (sku) уникален. Неактивные товары (is_active=False) можно скрывать из каталога.
+    """
+    # Допустимые значения категории (внутренний код — отображаемое название)
     CATEGORY_CHOICES = [
         ('electronics', 'Электроника'),
         ('clothing', 'Одежда'),
@@ -51,7 +67,7 @@ class Product(models.Model):
         max_digits=10,
         decimal_places=2,
         verbose_name="Цена",
-        validators=[MinValueValidator(0)]
+        validators=[MinValueValidator(0)]  # Цена не может быть отрицательной
     )
     quantity = models.IntegerField(
         verbose_name="Количество на складе",
@@ -77,7 +93,12 @@ class Product(models.Model):
 
 
 class Order(models.Model):
-    """Модель заказа"""
+    """
+    Модель заказа.
+
+    Связывает клиента с набором позиций (OrderItem). Содержит общую сумму,
+    статус и даты. PROTECT на клиенте — нельзя удалить клиента с заказами.
+    """
     STATUS_CHOICES = [
         ('pending', 'В обработке'),
         ('processing', 'В процессе'),
@@ -88,7 +109,7 @@ class Order(models.Model):
 
     customer = models.ForeignKey(
         Customer,
-        on_delete=models.PROTECT,
+        on_delete=models.PROTECT,  # Запрет удаления клиента при наличии заказов
         related_name='orders',
         verbose_name="Клиент"
     )
@@ -121,23 +142,29 @@ class Order(models.Model):
             models.Index(fields=['order_date']),
             models.Index(fields=['customer', 'order_date']),
         ]
-        ordering = ['-order_date']
+        ordering = ['-order_date']  # Свежие заказы первыми
 
     def __str__(self):
         return f"Заказ #{self.id} - {self.customer}"
 
 
 class OrderItem(models.Model):
-    """Модель элемента заказа"""
+    """
+    Модель позиции в заказе (одна строка заказа).
+
+    Связывает заказ и товар, хранит количество и цены. Один и тот же товар
+    в одном заказе может быть только в одной позиции (unique_together).
+    total_price пересчитывается в save().
+    """
     order = models.ForeignKey(
         Order,
-        on_delete=models.CASCADE,
+        on_delete=models.CASCADE,  # При удалении заказа удаляются и позиции
         related_name='items',
         verbose_name="Заказ"
     )
     product = models.ForeignKey(
         Product,
-        on_delete=models.PROTECT,
+        on_delete=models.PROTECT,  # Не удалять товар, на который есть заказы
         verbose_name="Товар"
     )
     quantity = models.IntegerField(
@@ -159,10 +186,10 @@ class OrderItem(models.Model):
         db_table = 'order_items'
         verbose_name = 'Элемент заказа'
         verbose_name_plural = 'Элементы заказа'
-        unique_together = ['order', 'product']
+        unique_together = ['order', 'product']  # Один товар — одна строка в заказе
 
     def save(self, *args, **kwargs):
-        # Автоматически рассчитываем общую стоимость
+        # Автоматически рассчитываем общую стоимость позиции
         self.total_price = self.unit_price * self.quantity
         super().save(*args, **kwargs)
 
