@@ -51,7 +51,14 @@ def main():
                 return
 
         from database.database_handler import setup_database
+        from database.database_handler import create_test_data
         setup_database()
+
+        # Настраиваем базу данных
+        if setup_database():
+            print("✅ База данных настроена")
+            # Создаем тестовые данные
+            create_test_data()
 
         # Импортируем окно приложения
         from ui.main_window import MainWindow

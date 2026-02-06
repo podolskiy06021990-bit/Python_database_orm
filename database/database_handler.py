@@ -274,27 +274,27 @@ class PostgreSQLHandler:
             return {}
 
 
-def _ensure_tables():
-    """
-    Создаёт таблицы по текущим моделям, если их ещё нет.
-    Порядок: Customer, Product, Order, OrderItem (из-за внешних ключей).
-    Не зависит от файлов миграций.
-    """
-    from django.db import connection
-
-    models_to_create = [Customer, Product, Order, OrderItem]
-
-    with connection.cursor() as cursor:
-        existing_tables = set(connection.introspection.table_names(cursor))
-
-    with connection.schema_editor() as schema_editor:
-        for model in models_to_create:
-            table = model._meta.db_table
-            if table in existing_tables:
-                continue
-            schema_editor.create_model(model)
-            existing_tables.add(table)
-            print(f"  Создана таблица: {table}")
+# def _ensure_tables():
+#     """
+#     Создаёт таблицы по текущим моделям, если их ещё нет.
+#     Порядок: Customer, Product, Order, OrderItem (из-за внешних ключей).
+#     Не зависит от файлов миграций.
+#     """
+#     from django.db import connection
+#
+#     models_to_create = [Customer, Product, Order, OrderItem]
+#
+#     with connection.cursor() as cursor:
+#         existing_tables = set(connection.introspection.table_names(cursor))
+#
+#     with connection.schema_editor() as schema_editor:
+#         for model in models_to_create:
+#             table = model._meta.db_table
+#             if table in existing_tables:
+#                 continue
+#             schema_editor.create_model(model)
+#             existing_tables.add(table)
+#             print(f"  Создана таблица: {table}")
 
 
 def setup_database():
@@ -314,15 +314,15 @@ def setup_database():
         pass
 
     # Всегда проверяем и создаём недостающие таблицы по моделям
-    try:
-        _ensure_tables()
-        print("✅ Таблицы в базе данных созданы/обновлены")
-        return True
-    except Exception as e:
-        print(f"❌ Ошибка при создании таблиц: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    # try:
+    #     _ensure_tables()
+    #     print("✅ Таблицы в базе данных созданы/обновлены")
+    #     return True
+    # except Exception as e:
+    #     print(f"❌ Ошибка при создании таблиц: {e}")
+    #     import traceback
+    #     traceback.print_exc()
+    #     return False
 
 
 def create_test_data():
