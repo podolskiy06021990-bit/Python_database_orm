@@ -1,3 +1,7 @@
 /.idea
 /__pycache__
 *.pyc
+
+# Миграции: игнорировать все, кроме __init__.py
+/database/migrations/*
+!/database/migrations/__init__.py
