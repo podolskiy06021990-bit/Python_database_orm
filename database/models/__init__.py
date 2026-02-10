@@ -8,5 +8,8 @@ from .Customer import Customer
 from .Product import Product
 from .Order import Order
 from .OrderItem import OrderItem
+from .Student import Student
+from .Teacher import Teacher
 
-__all__ = ['Customer', 'Product', 'Order', 'OrderItem']
+
+__all__ = ['Customer', 'Product', 'Order', 'OrderItem', 'Student', 'Teacher']

@@ -19,13 +19,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config')
 
 try:
     django.setup()
-    from .models import Customer, Product, Order, OrderItem
+    from .models import Customer, Product, Order, OrderItem, Student, Teacher
     from django.db import models as django_models
     DJANGO_SETUP = True
 except Exception as e:
     print(f"❌ Ошибка настройки Django: {e}")
     DJANGO_SETUP = False
-    Customer = Product = Order = OrderItem = None
+    Customer = Product = Order = OrderItem = Student = Teacher =None
     django_models = None
 
 
@@ -274,6 +274,23 @@ class PostgreSQLHandler:
             return {}
 
 
+    @transaction.atomic
+    def create_student(self, **kwargs) -> Optional[Student]:
+        """Создание нового клиента"""
+        if not DJANGO_SETUP:
+            return None
+
+        try:
+            student = Student.objects.create(**kwargs)
+            print(f"✅ Клиент создан: {student}")
+            return student
+        except IntegrityError as e:
+            print(f"❌ Ошибка при создании клиента (дубликат email): {e}")
+            return None
+        except Exception as e:
+            print(f"❌ Неожиданная ошибка при создании клиента: {e}")
+            return None
+
 def setup_database():
     """Настройка базы данных: создание и применение миграций."""
     if not DJANGO_SETUP:
@@ -342,6 +359,16 @@ def create_test_data():
 
         for product_data in test_products:
             handler.create_product(**product_data)
+
+        test_students = [
+            {'first_name': 'Иван', 'student_grade': '50'},
+            {'first_name': 'Мария', 'student_grade': '60'},
+            {'first_name': 'Алексей', 'student_grade': '66'},
+        ]
+
+        for student_data in test_students:
+            handler.create_student(**student_data)
+
 
         print("✅ Тестовые данные созданы")
         return True

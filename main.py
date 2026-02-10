@@ -52,7 +52,8 @@ def main():
 
         from database.PostgreSQLHandler import setup_database
         from database.PostgreSQLHandler import create_test_data
-        setup_database()
+        if setup_database():
+            create_test_data()
 
         # Импортируем окно приложения
         from ui.main_window import MainWindow
