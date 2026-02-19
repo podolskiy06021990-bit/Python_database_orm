@@ -376,4 +376,3 @@ def create_test_data():
     except Exception as e:
         print(f"❌ Ошибка создания тестовых данных: {e}")
         return False
-
