@@ -21,15 +21,11 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
-
     class Meta:
-        db_table = 'students'
-        verbose_name = 'Студент'
-        verbose_name_plural = 'Студенты'
-        # Индексы для быстрого поиска по email и ФИО
-        indexes = [
-            models.Index(fields=['first_name']),
-        ]
+        ordering = ['first_name']  # добавьте этот атрибут
+
+    def __str__(self):
+        return self.first_name
 
     def clean(self):
         # Проверка, что имя не пустое
